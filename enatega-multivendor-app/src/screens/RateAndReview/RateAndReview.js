@@ -38,6 +38,7 @@ function RateAndReview(props) {
   const [id] = useState(props.route.params._id ?? null)
   const [rating, setRating] = useState(0)
   const [description, setDescription] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const themeContext = useContext(ThemeContext)
   const currentTheme = theme[themeContext.ThemeValue]
   const inset = useSafeAreaInsets()
@@ -88,7 +89,12 @@ function RateAndReview(props) {
   }
 
   function onSubmit() {
+    // Prevent multiple submissions
+    if (isSubmitting || loadingMutation) {
+      return
+    }
     if (rating > 0 && rating < 6) {
+      setIsSubmitting(true)
       mutate({
         variables: {
           order: id,
@@ -104,10 +110,12 @@ function RateAndReview(props) {
   }
 
   function onCompleted(data) {
+    setIsSubmitting(false)
     props.navigation.goBack()
   }
 
   function onError(error) {
+    setIsSubmitting(false)
     console.log(JSON.stringify(error))
     FlashMessage({
       message: error.networkError.result.errors[0].message
@@ -207,8 +215,8 @@ function RateAndReview(props) {
           </KeyboardAvoidingView>
           <View style={styles().btnContainer}>
             <View style={styles().btnSubContainer}>
-              {loadingMutation && <Spinner backColor="transparent" spinnerColor={currentTheme.main} />}
-              {!loadingMutation && (
+              {(loadingMutation || isSubmitting) && <Spinner backColor="transparent" spinnerColor={currentTheme.main} />}
+              {!loadingMutation && !isSubmitting && (
                 <TouchableOpacity
                   activeOpacity={0.7}
                   onPress={onSubmit}
